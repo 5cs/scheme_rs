@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::fmt;
 use std::ops::{Add, Div, Mul, Sub};
 
 use std::rc::Rc;
@@ -17,15 +18,14 @@ fn tokenize(s: &str) -> Box<Vec<String>> {
     Box::new(v)
 }
 
-fn read_from_tokens(tokens: &mut Box<Vec<String>>) -> Result<Box<SyntaxTree>, ()> {
+fn read_from_tokens(tokens: &mut Box<Vec<String>>) -> Result<SyntaxTree, ()> {
     if tokens.len() == 0 {
         return Err(());
     }
     let token: String = String::from(tokens.get(0).unwrap());
     tokens.drain(0..1);
-    // println!("{:?}", tokens);
     if token == "(" {
-        let mut l: Box<Vec<Box<SyntaxTree>>> = Box::new(vec![]);
+        let mut l: Vec<SyntaxTree> = vec![];
         while tokens.get(0).unwrap() != ")" {
             if let Ok(s) = read_from_tokens(tokens) {
                 l.push(s);
@@ -34,38 +34,72 @@ fn read_from_tokens(tokens: &mut Box<Vec<String>>) -> Result<Box<SyntaxTree>, ()
             }
         }
         tokens.drain(0..1);
-        // println!("{:?}", tokens);
-        Ok(Box::new(SyntaxTree::List(l)))
+        Ok(SyntaxTree::List(l))
     } else if token != ")" {
         // atom type: int, float, str
         if let Ok(v) = token.parse::<i32>() {
-            Ok(Box::new(SyntaxTree::Integer(v)))
+            Ok(SyntaxTree::Integer(v))
         } else if let Ok(v) = token.parse::<f32>() {
-            Ok(Box::new(SyntaxTree::Float(v)))
+            Ok(SyntaxTree::Float(v))
         } else {
-            Ok(Box::new(SyntaxTree::Symbol(token)))
+            Ok(SyntaxTree::Symbol(token))
         }
     } else {
         Err(())
     }
 }
 
-// #[derive(Debug)]
 enum SyntaxTree {
+    Nil,
     Bool(bool),
     Integer(i32),
     Float(f32),
     Symbol(String),
-    List(Box<Vec<Box<SyntaxTree>>>),
+    List(Vec<SyntaxTree>),
     BinaryOp(Rc<dyn Fn(SyntaxTree, SyntaxTree) -> SyntaxTree>),
+    UnaryOp(Rc<dyn Fn(SyntaxTree) -> SyntaxTree>),
+    LambdaOp(Procedure),
     SyntaxError,
 }
 
-fn parse(program: &str) -> Result<Box<SyntaxTree>, ()> {
+struct Procedure {
+    env: Env,
+    parms: HashMap<String, Box<SyntaxTree>>,
+    body: Box<SyntaxTree>,
+}
+
+fn parse(program: &str) -> Result<SyntaxTree, ()> {
     read_from_tokens(&mut tokenize(program))
 }
 
-impl Copy for SyntaxTree {}
+// impl Copy for SyntaxTree {}
+
+impl fmt::Debug for SyntaxTree {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SyntaxTree::Nil => f.write_str(&format!("nil")),
+            SyntaxTree::Bool(v) => f.write_str(&format!("{:?}", v)),
+            SyntaxTree::Integer(v) => f.write_str(&format!("{:?}", v)),
+            SyntaxTree::Float(v) => f.write_str(&format!("{:?}", v)),
+            SyntaxTree::Symbol(v) => f.write_str(&format!("{:?}", v)),
+            SyntaxTree::BinaryOp(_) => f.write_str(&format!("bop")),
+            SyntaxTree::UnaryOp(_) => f.write_str(&format!("uop")),
+            SyntaxTree::List(v) => {
+                let mut s = String::new();
+                s.push('[');
+                for i in 0..v.len() {
+                    s.push_str(&format!("{:?} ", v[i]));
+                }
+                if v.len() != 0 {
+                    s.pop();
+                }
+                s.push(']');
+                f.write_str(&s)
+            }
+            _ => f.write_str(&format!("{:?}", "null")),
+        }
+    }
+}
 
 impl Clone for SyntaxTree {
     fn clone(&self) -> Self {
@@ -210,12 +244,14 @@ impl BinaryOps for SyntaxTree {
         match self {
             SyntaxTree::List(l) => match other {
                 SyntaxTree::List(r) => {
-                    let mut res: Vec<Box<SyntaxTree>> = vec![];
+                    let mut res: Vec<SyntaxTree> = vec![];
                     for i in 0..l.len() {
-                        let v = *l[i];
-                        res.push(Box::new(v));
+                        res.push(l[i].clone());
                     }
-                    SyntaxTree::List(Box::new(res))
+                    for i in 0..r.len() {
+                        res.push(r[i].clone());
+                    }
+                    SyntaxTree::List(res)
                 }
                 _ => SyntaxTree::SyntaxError,
             },
@@ -227,8 +263,8 @@ impl BinaryOps for SyntaxTree {
 }
 
 trait UnaryOps {
-    // abs
     fn abs(&self) -> Self;
+    fn quote(&self) -> Self;
 }
 
 impl UnaryOps for SyntaxTree {
@@ -239,12 +275,29 @@ impl UnaryOps for SyntaxTree {
             _ => SyntaxTree::SyntaxError,
         }
     }
+    fn quote(&self) -> Self {
+        match self {
+            SyntaxTree::Integer(v) => {
+                let mut l: Vec<SyntaxTree> = vec![];
+                l.push(SyntaxTree::Integer(*v));
+                SyntaxTree::List(l)
+            }
+            SyntaxTree::Float(v) => {
+                let mut l: Vec<SyntaxTree> = vec![];
+                l.push(SyntaxTree::Float(*v));
+                SyntaxTree::List(l)
+            }
+            SyntaxTree::List(v) => SyntaxTree::List(v.clone()),
+            _ => SyntaxTree::SyntaxError,
+        }
+    }
 }
 
 struct Env {
     outer: Option<Box<Env>>,
     binary_ops: HashMap<String, Rc<dyn Fn(SyntaxTree, SyntaxTree) -> SyntaxTree>>,
     unary_ops: HashMap<String, Rc<dyn Fn(SyntaxTree) -> SyntaxTree>>,
+    variables: HashMap<String, SyntaxTree>,
 }
 
 impl Env {
@@ -253,6 +306,7 @@ impl Env {
             outer: None,
             binary_ops: HashMap::new(),
             unary_ops: HashMap::new(),
+            variables: HashMap::new(),
         };
         env.make_binary_op("+", |x, y| x + y);
         env.make_binary_op("-", |x, y| x - y);
@@ -264,7 +318,10 @@ impl Env {
         env.make_binary_op("<=", |x, y| SyntaxTree::Bool(x <= y));
         env.make_binary_op("==", |x, y| SyntaxTree::Bool(x == y));
         env.make_binary_op("!=", |x, y| SyntaxTree::Bool(x != y));
+        env.make_binary_op("append", |x, y| x.append(y));
         env.make_unary_op("abs", |x| x.abs());
+        env.make_unary_op("quote", |x| x.quote());
+        env.make_unary_op("'", |x| x.quote()); // syntax sugar
         env
     }
 
@@ -282,11 +339,17 @@ impl Env {
         self.unary_ops.insert(name.to_owned(), Rc::new(func));
     }
 
-    fn find(&self, x: String) -> Result<Box<SyntaxTree>, ()> {
+    fn update(&mut self, map: HashMap<String, Box<SyntaxTree>>) {}
+
+    fn find(&self, x: String) -> Result<SyntaxTree, ()> {
         if self.binary_ops.contains_key(&x) {
-            Ok(Box::new(SyntaxTree::BinaryOp(
+            Ok(SyntaxTree::BinaryOp(
                 self.binary_ops.get(&x).unwrap().clone(),
-            )))
+            ))
+        } else if self.unary_ops.contains_key(&x) {
+            Ok(SyntaxTree::UnaryOp(self.unary_ops.get(&x).unwrap().clone()))
+        } else if self.variables.contains_key(&x) {
+            Ok(self.variables.get(&x).unwrap().clone())
         } else {
             match self.outer {
                 Some(ref v) => v.find(x),
@@ -296,41 +359,95 @@ impl Env {
     }
 }
 
-fn eval(x: &SyntaxTree, env: &mut Env) -> Result<Box<SyntaxTree>, ()> {
+fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
     match x {
+        SyntaxTree::Bool(v) => Ok(SyntaxTree::Bool(*v)),
+        SyntaxTree::Integer(v) => Ok(SyntaxTree::Integer(*v)),
+        SyntaxTree::Float(v) => Ok(SyntaxTree::Float(*v)),
         SyntaxTree::Symbol(v) => env.find(v.to_owned()),
-        SyntaxTree::List(v) => match *v[0] {
-            SyntaxTree::Symbol(_) => {
-                if let Ok(proc) = eval(&v[0], env) {
-                    let val = match *proc {
-                        SyntaxTree::BinaryOp(op) => {
-                            let arg1 = *eval(&v[1], env)?;
-                            let arg2 = *eval(&v[2], env)?;
-                            op(arg1, arg2)
+        SyntaxTree::List(v) => match v[0] {
+            SyntaxTree::Symbol(ref s) => {
+                if s == "if" {
+                    let (test, conseq, alt) = (v[1].clone(), v[2].clone(), v[3].clone());
+                    let pred = eval(&test, env)?;
+                    let exp = match pred {
+                        SyntaxTree::Bool(v) => {
+                            if v {
+                                conseq
+                            } else {
+                                alt
+                            }
                         }
                         _ => SyntaxTree::SyntaxError,
                     };
-                    Ok(Box::new(val))
+                    return eval(&exp, env);
+                }
+
+                if s == "define" {
+                    let var = v[1].clone();
+                    match var {
+                        SyntaxTree::Symbol(ref k) => {
+                            let res = eval(&v[2], env)?;
+                            env.variables.insert(k.to_owned(), res)
+                        }
+                        _ => None,
+                    };
+                    return Ok(SyntaxTree::Nil);
+                }
+
+                // (define x 10)
+                // (define abs
+                //  (lambda (x)
+                //   (if (< x 0)
+                //       (- 0 x) x)))
+                // (abs -1)
+                // ((lambda (x)
+                //          (if (< x 0)
+                //              (- 0 x) x))
+                //  -1)
+                if s == "lambda" {
+                    let (parms, body) = (v[1].clone(), v[2].clone());
+                    //struct Procedure {
+                    //    env: Env,
+                    //    parms: HashMap<String, Box<SyntaxTree>>,
+                    //    body: Box<SyntaxTree>,
+                    //}
+                    // let mut proc = Procedure {
+                    //     env: *env,
+                    //     parms: HashMap::new(),
+                    //     body: Box::new(SyntaxTree::List(vec![])),
+                    // };
+                }
+
+                if let Ok(proc) = eval(&v[0], env) {
+                    let val = match proc {
+                        SyntaxTree::BinaryOp(op) => {
+                            let arg1 = eval(&v[1], env)?;
+                            let arg2 = eval(&v[2], env)?;
+                            op(arg1, arg2)
+                        }
+                        SyntaxTree::UnaryOp(op) => op(v[1].clone()),
+                        SyntaxTree::LambdaOp(op) => SyntaxTree::SyntaxError,
+                        _ => SyntaxTree::SyntaxError,
+                    };
+                    Ok(val)
                 } else {
                     Err(())
                 }
             }
             _ => Err(()),
         },
-        SyntaxTree::Integer(v) => Ok(Box::new(SyntaxTree::Integer(*v))),
-        SyntaxTree::Float(v) => Ok(Box::new(SyntaxTree::Float(*v))),
         _ => Err(()),
     }
 }
 
 fn main() {
     let mut global_env = Env::new();
-    global_env.make_binary_op("^", |x, y| x + y);
 
     let a = SyntaxTree::Integer(5);
     let b = SyntaxTree::Float(2.0);
     if let Ok(res) = global_env.find("*".to_owned()) {
-        let val = match *res {
+        let val = match res {
             SyntaxTree::BinaryOp(op) => op(a, b),
             _ => SyntaxTree::SyntaxError,
         };
@@ -344,11 +461,117 @@ fn main() {
     let program = "(+ (/ (- 5 2) 3) (* 2 5.1))";
     if let Ok(tree) = parse(program) {
         if let Ok(val) = eval(&tree, &mut global_env) {
-            match *val {
+            match val {
                 SyntaxTree::Integer(v) => println!("{:?}", v),
                 SyntaxTree::Float(v) => println!("{:?}", v),
                 _ => println!("{:?}", "err"),
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_binary_op() {
+        let mut global_env = Env::new();
+        let program = "(+ 1 2)";
+        match parse(program) {
+            Err(_) => assert!(false, "parse error"),
+            Ok(tree) => match eval(&tree, &mut global_env) {
+                Err(_) => assert!(false, "eval error"),
+                Ok(val) => match val {
+                    SyntaxTree::Integer(v) => assert!(v == 3),
+                    _ => assert!(false, "binary op wrong result"),
+                },
+            },
+        }
+    }
+
+    #[test]
+    fn test_append_op() {
+        let mut global_env = Env::new();
+
+        let program = "(append (quote (1 1)) (quote 1))";
+        match parse(program) {
+            Err(_) => assert!(false, "parse error"),
+            Ok(tree) => match eval(&tree, &mut global_env) {
+                Err(_) => assert!(false, "eval error"),
+                Ok(val) => match val {
+                    SyntaxTree::List(v) => {
+                        assert!(v.len() == 3);
+                        for i in 0..v.len() {
+                            match v[i] {
+                                SyntaxTree::Integer(k) => assert!(k == 1),
+                                _ => assert!(false, "type error"),
+                            }
+                        }
+                    }
+                    _ => assert!(false, "append op wrong result"),
+                },
+            },
+        }
+    }
+
+    #[test]
+    fn test_unary_op() {
+        let mut global_env = Env::new();
+        let program = "(> 2 1)";
+        match parse(program) {
+            Err(_) => assert!(false, "parse error"),
+            Ok(tree) => match eval(&tree, &mut global_env) {
+                Err(_) => assert!(false, "eval error"),
+                Ok(val) => match val {
+                    SyntaxTree::Bool(v) => assert!(v == true),
+                    _ => assert!(false, "unary op wrong result"),
+                },
+            },
+        }
+    }
+
+    #[test]
+    fn test_if() {
+        let mut global_env = Env::new();
+        let program = "(if (> (+ 1 1) 1) (+ (- 2 1) (* 2 4)) 5)";
+        match parse(program) {
+            Err(_) => assert!(false, "parse error"),
+            Ok(tree) => match eval(&tree, &mut global_env) {
+                Err(_) => assert!(false, "eval error"),
+                Ok(val) => match val {
+                    SyntaxTree::Integer(v) => assert!(v == 9),
+                    _ => assert!(false, "if error"),
+                },
+            },
+        }
+    }
+
+    #[test]
+    fn test_define() {
+        let mut global_env = Env::new();
+        let program = "(define a 1)";
+        match parse(program) {
+            Err(_) => assert!(false, "parse error"),
+            Ok(tree) => match eval(&tree, &mut global_env) {
+                Err(_) => assert!(false, "eval error"),
+                Ok(val) => match val {
+                    SyntaxTree::Nil => assert!(true),
+                    _ => assert!(false, "define error"),
+                },
+            },
+        }
+
+        let program = "a";
+        match parse(program) {
+            Err(_) => assert!(false, "parse error"),
+            Ok(tree) => match eval(&tree, &mut global_env) {
+                Err(_) => assert!(false, "eval error"),
+                Ok(val) => match val {
+                    SyntaxTree::Integer(v) => assert!(v == 1),
+                    _ => assert!(false, "defined var wrong result"),
+                },
+            },
         }
     }
 }
