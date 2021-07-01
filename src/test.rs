@@ -45,13 +45,13 @@ fn test_append_op() {
 #[test]
 fn test_unary_op() {
     let mut global_env = Env::new();
-    let program = "(> 2 1)";
+    let program = "(abs (- 10 2))";
     match parse(program) {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
             Ok(val) => match val {
-                SyntaxTree::Bool(v) => assert!(v == true),
+                SyntaxTree::Integer(v) => assert!(v == 8),
                 _ => assert!(false, "unary op wrong result"),
             },
         },

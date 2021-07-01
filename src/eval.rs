@@ -46,7 +46,10 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
                         let arg2 = eval(&v[2], env)?;
                         return Ok(op(arg1, arg2));
                     }
-                    SyntaxTree::UnaryOp(op) => return Ok(op(v[1].clone())),
+                    SyntaxTree::UnaryOp(op) => {
+                        let arg = eval(&v[1], env)?;
+                        return Ok(op(arg));
+                    }
                     SyntaxTree::LambdaOp(_) => (),
                     _ => return Ok(SyntaxTree::SyntaxError),
                 };
@@ -72,7 +75,7 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
                 }
                 return eval(&op.body, &mut local_env);
             }
-            return Err(());
+            return Ok(SyntaxTree::List(v.clone()));
         }
         _ => Err(()),
     }
