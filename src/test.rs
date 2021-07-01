@@ -207,3 +207,52 @@ fn test_numeric() {
         }
     }
 }
+
+#[test]
+fn test_fibonacci() {
+    let mut global_env = Env::new();
+    let program = "(define fib
+                    (lambda (n)
+                     (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))))";
+    let tree = parse(program).unwrap();
+    let _ = eval(&tree, &mut global_env);
+
+    let program = "(fib 10)";
+    let tree = parse(program).unwrap();
+    if let Ok(res) = eval(&tree, &mut global_env) {
+        match res {
+            SyntaxTree::Integer(v) => assert!(v == 55),
+            _ => assert!(false, "fibonacci wrong result"),
+        }
+    } else {
+        assert!(false, "eval error");
+    }
+}
+
+#[test]
+fn test_fibonacci_cps() {
+    let mut global_env = Env::new();
+    let program = "(define id (lambda (x) x))";
+    let tree = parse(program).unwrap();
+    let _ = eval(&tree, &mut global_env);
+
+    // continuation passing style
+    let program = "(define fib-cps
+                    (lambda (n k)
+                     (if (< n 2)
+                      (k n)
+                      (k (+ (fib-cps (- n 1) id) (fib-cps (- n 2) id)))))))";
+    let tree = parse(program).unwrap();
+    let _ = eval(&tree, &mut global_env);
+
+    let program = "(fib-cps 10 (lambda (x) x))";
+    let tree = parse(program).unwrap();
+    if let Ok(res) = eval(&tree, &mut global_env) {
+        match res {
+            SyntaxTree::Integer(v) => assert!(v == 55),
+            _ => assert!(false, "fibonacci wrong result"),
+        }
+    } else {
+        assert!(false, "eval error");
+    }
+}
