@@ -1,4 +1,5 @@
 use std::fmt;
+use std::iter::FromIterator;
 use std::rc::Rc;
 
 pub enum SyntaxTree {
@@ -60,5 +61,15 @@ impl Clone for SyntaxTree {
             SyntaxTree::List(v) => SyntaxTree::List(v.clone()), // deep copy?
             _ => SyntaxTree::SyntaxError,
         }
+    }
+}
+
+impl FromIterator<SyntaxTree> for SyntaxTree {
+    fn from_iter<T: IntoIterator<Item = SyntaxTree>>(iter: T) -> Self {
+        let mut v: Vec<SyntaxTree> = vec![];
+        for i in iter {
+            v.push(i);
+        }
+        SyntaxTree::List(v)
     }
 }

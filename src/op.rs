@@ -4,11 +4,14 @@ use std::ops::{Add, Div, Mul, Sub};
 
 pub trait BinaryOps<Rhs = Self> {
     fn append(&self, rhs: Rhs) -> Self;
+    fn cons(&self, rhs: Rhs) -> Self;
 }
 
 pub trait UnaryOps {
     fn abs(&self) -> Self;
     fn quote(&self) -> Self;
+    fn car(&self) -> Self;
+    fn cdr(&self) -> Self;
 }
 
 impl Add for SyntaxTree {
@@ -91,6 +94,14 @@ impl Div for SyntaxTree {
 impl PartialEq for SyntaxTree {
     fn eq(&self, other: &SyntaxTree) -> bool {
         match self {
+            SyntaxTree::Nil => match other {
+                SyntaxTree::Nil => true,
+                _ => false,
+            },
+            SyntaxTree::Bool(l) => match other {
+                SyntaxTree::Bool(r) => l == r,
+                _ => false,
+            },
             SyntaxTree::Integer(l) => match other {
                 SyntaxTree::Integer(r) => l == r,
                 _ => false,
@@ -101,6 +112,10 @@ impl PartialEq for SyntaxTree {
             },
             SyntaxTree::Symbol(l) => match other {
                 SyntaxTree::Symbol(r) => l == r,
+                _ => false,
+            },
+            SyntaxTree::List(l) => match other {
+                SyntaxTree::List(r) => l.len() == r.len() && l.iter().zip(r).all(|(x, y)| x == y),
                 _ => false,
             },
             _ => false,
@@ -135,20 +150,27 @@ impl BinaryOps for SyntaxTree {
     fn append(&self, other: SyntaxTree) -> Self {
         match self {
             SyntaxTree::List(l) => match other {
-                SyntaxTree::List(r) => {
-                    let mut res: Vec<SyntaxTree> = vec![];
-                    for i in 0..l.len() {
-                        res.push(l[i].clone());
-                    }
-                    for i in 0..r.len() {
-                        res.push(r[i].clone());
-                    }
-                    SyntaxTree::List(res)
-                }
+                SyntaxTree::List(r) => l.iter().cloned().chain(r.iter().cloned()).collect(),
                 _ => SyntaxTree::SyntaxError,
             },
             SyntaxTree::Integer(_) => self.clone() + other,
             SyntaxTree::Float(_) => self.clone() + other,
+            _ => SyntaxTree::SyntaxError,
+        }
+    }
+
+    fn cons(&self, other: SyntaxTree) -> Self {
+        match other {
+            SyntaxTree::List(r) => match self {
+                SyntaxTree::List(l) => l.iter().cloned().chain(r.iter().cloned()).collect(),
+                SyntaxTree::Integer(_) | SyntaxTree::Float(_) => [self.clone()]
+                    .to_vec()
+                    .iter()
+                    .cloned()
+                    .chain(r.iter().cloned())
+                    .collect(),
+                _ => SyntaxTree::SyntaxError,
+            },
             _ => SyntaxTree::SyntaxError,
         }
     }
@@ -176,6 +198,20 @@ impl UnaryOps for SyntaxTree {
                 SyntaxTree::List(l)
             }
             SyntaxTree::List(v) => SyntaxTree::List(v.clone()),
+            _ => SyntaxTree::SyntaxError,
+        }
+    }
+
+    fn car(&self) -> Self {
+        match self {
+            SyntaxTree::List(v) => v[0].clone(),
+            _ => SyntaxTree::SyntaxError,
+        }
+    }
+
+    fn cdr(&self) -> Self {
+        match self {
+            SyntaxTree::List(v) => SyntaxTree::List(v[1..].to_vec()),
             _ => SyntaxTree::SyntaxError,
         }
     }

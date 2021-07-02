@@ -36,9 +36,12 @@ impl Env {
         env.make_binary_op("==", |x, y| SyntaxTree::Bool(x == y));
         env.make_binary_op("!=", |x, y| SyntaxTree::Bool(x != y));
         env.make_binary_op("append", |x, y| x.append(y));
+        env.make_binary_op("cons", |x, y| x.cons(y));
         env.make_unary_op("abs", |x| x.abs());
         env.make_unary_op("quote", |x| x.quote());
         env.make_unary_op("'", |x| x.quote()); // syntax sugar
+        env.make_unary_op("car", |x| x.car());
+        env.make_unary_op("cdr", |x| x.cdr());
         env
     }
 
