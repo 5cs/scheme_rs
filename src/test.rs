@@ -9,10 +9,7 @@ fn test_binary_op() {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
-            Ok(val) => match val {
-                SyntaxTree::Integer(v) => assert!(v == 3),
-                _ => assert!(false, "binary op wrong result"),
-            },
+            Ok(val) => assert_eq!(val, SyntaxTree::Integer(3)),
         },
     }
 }
@@ -20,24 +17,68 @@ fn test_binary_op() {
 #[test]
 fn test_append_op() {
     let mut global_env = Env::new();
-
     let program = "(append (quote (1 1)) (quote 1))";
     match parse(program) {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
-            Ok(val) => match val {
-                SyntaxTree::List(v) => {
-                    assert!(v.len() == 3);
-                    for i in 0..v.len() {
-                        match v[i] {
-                            SyntaxTree::Integer(k) => assert!(k == 1),
-                            _ => assert!(false, "type error"),
-                        }
-                    }
-                }
-                _ => assert!(false, "append op wrong result"),
-            },
+            Ok(val) => assert_eq!(
+                val,
+                SyntaxTree::List(vec![
+                    SyntaxTree::Integer(1),
+                    SyntaxTree::Integer(1),
+                    SyntaxTree::Integer(1)
+                ])
+            ),
+        },
+    }
+}
+
+#[test]
+fn test_cons() {
+    let mut global_env = Env::new();
+    let program = "(cons (quote (0 1)) (quote (2)))";
+    match parse(program) {
+        Err(_) => assert!(false, "parse error"),
+        Ok(tree) => match eval(&tree, &mut global_env) {
+            Err(_) => assert!(false, "eval error"),
+            Ok(val) => assert_eq!(
+                val,
+                SyntaxTree::List(vec![
+                    SyntaxTree::Integer(0),
+                    SyntaxTree::Integer(1),
+                    SyntaxTree::Integer(2)
+                ])
+            ),
+        },
+    }
+}
+
+#[test]
+fn test_car() {
+    let mut global_env = Env::new();
+    let program = "(car (quote ((0 1) 2)))";
+    match parse(program) {
+        Err(_) => assert!(false, "parse error"),
+        Ok(tree) => match eval(&tree, &mut global_env) {
+            Err(_) => assert!(false, "eval error"),
+            Ok(val) => assert_eq!(
+                val,
+                SyntaxTree::List(vec![SyntaxTree::Integer(0), SyntaxTree::Integer(1)])
+            ),
+        },
+    }
+}
+
+#[test]
+fn test_cdr() {
+    let mut global_env = Env::new();
+    let program = "(cdr (quote ((0 1) 2)))";
+    match parse(program) {
+        Err(_) => assert!(false, "parse error"),
+        Ok(tree) => match eval(&tree, &mut global_env) {
+            Err(_) => assert!(false, "eval error"),
+            Ok(val) => assert_eq!(val, SyntaxTree::List(vec![SyntaxTree::Integer(2)])),
         },
     }
 }
@@ -50,10 +91,7 @@ fn test_unary_op() {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
-            Ok(val) => match val {
-                SyntaxTree::Integer(v) => assert!(v == 8),
-                _ => assert!(false, "unary op wrong result"),
-            },
+            Ok(val) => assert_eq!(val, SyntaxTree::Integer(8)),
         },
     }
 }
@@ -66,10 +104,7 @@ fn test_if() {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
-            Ok(val) => match val {
-                SyntaxTree::Integer(v) => assert!(v == 9),
-                _ => assert!(false, "if error"),
-            },
+            Ok(val) => assert_eq!(val, SyntaxTree::Integer(9)),
         },
     }
 }
@@ -82,10 +117,7 @@ fn test_define() {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
-            Ok(val) => match val {
-                SyntaxTree::Nil => assert!(true),
-                _ => assert!(false, "define error"),
-            },
+            Ok(val) => assert_eq!(val, SyntaxTree::Nil),
         },
     }
 
@@ -94,10 +126,7 @@ fn test_define() {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
-            Ok(val) => match val {
-                SyntaxTree::Integer(v) => assert!(v == 1),
-                _ => assert!(false, "defined var wrong result"),
-            },
+            Ok(val) => assert_eq!(val, SyntaxTree::Integer(1)),
         },
     }
 }
@@ -113,10 +142,7 @@ fn test_lambda_op() {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
-            Ok(val) => match val {
-                SyntaxTree::Nil => assert!(true),
-                _ => assert!(false, "defined error"),
-            },
+            Ok(val) => assert_eq!(val, SyntaxTree::Nil),
         },
     }
 
@@ -137,10 +163,7 @@ fn test_lambda_op() {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
-            Ok(val) => match val {
-                SyntaxTree::Integer(v) => assert!(v == 1),
-                _ => assert!(false, "defined var wrong result"),
-            },
+            Ok(val) => assert_eq!(val, SyntaxTree::Integer(1)),
         },
     }
 }
@@ -155,16 +178,13 @@ fn test_anonymous_lambda() {
         Err(_) => assert!(false, "parse error"),
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
-            Ok(val) => match val {
-                SyntaxTree::Integer(v) => assert!(v == 1),
-                _ => assert!(false, "defined error"),
-            },
+            Ok(val) => assert_eq!(val, SyntaxTree::Integer(1)),
         },
     }
 }
 
 #[test]
-fn test_numeric() {
+fn test_sqrt_newton() {
     let mut global_env = Env::new();
     let program = "(define square (lambda (x) (* x x)))";
     let tree = parse(program).unwrap();
@@ -220,10 +240,7 @@ fn test_fibonacci() {
     let program = "(fib 10)";
     let tree = parse(program).unwrap();
     if let Ok(res) = eval(&tree, &mut global_env) {
-        match res {
-            SyntaxTree::Integer(v) => assert!(v == 55),
-            _ => assert!(false, "fibonacci wrong result"),
-        }
+        assert_eq!(res, SyntaxTree::Integer(55));
     } else {
         assert!(false, "eval error");
     }
@@ -248,10 +265,7 @@ fn test_fibonacci_cps() {
     let program = "(fib-cps 10 (lambda (x) x))";
     let tree = parse(program).unwrap();
     if let Ok(res) = eval(&tree, &mut global_env) {
-        match res {
-            SyntaxTree::Integer(v) => assert!(v == 55),
-            _ => assert!(false, "fibonacci wrong result"),
-        }
+        assert_eq!(res, SyntaxTree::Integer(55));
     } else {
         assert!(false, "eval error");
     }
