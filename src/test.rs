@@ -94,6 +94,66 @@ fn test_unary_op() {
             Ok(val) => assert_eq!(val, SyntaxTree::Integer(8)),
         },
     }
+
+    let program = "(list 1 2)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::List(vec![SyntaxTree::Integer(1), SyntaxTree::Integer(2),])
+    );
+
+    let program = "(null? 1)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::Bool(false)
+    );
+
+    let program = "(null? (quote ()))";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::Bool(true)
+    );
+
+    let program = "(number? (quote ()))";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::Bool(false)
+    );
+
+    let program = "(number? 1)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::Bool(true)
+    );
+
+    let program = "(symbol? 'a)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::Bool(true)
+    );
+
+    let program = "(symbol? 1)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::Bool(false)
+    );
+
+    let program = "(list? (quote 1))";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::Bool(true)
+    );
+
+    let program = "(list? 'a)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::Bool(false)
+    );
+
+    let program = "(procedure? +)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        SyntaxTree::Bool(true)
+    );
 }
 
 #[test]

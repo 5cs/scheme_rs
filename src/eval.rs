@@ -9,6 +9,10 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
         SyntaxTree::Float(v) => Ok(SyntaxTree::Float(*v)),
         SyntaxTree::Symbol(v) => env.find(v),
         SyntaxTree::List(v) => {
+            if v.len() == 0 {
+                return Ok(x.clone());
+            }
+
             if let SyntaxTree::Symbol(ref s) = v[0] {
                 if s == "if" {
                     let (test, conseq, alt) = (v[1].clone(), v[2].clone(), v[3].clone());
@@ -50,7 +54,8 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
                         let arg = eval(&v[1], env)?;
                         return Ok(op(arg));
                     }
-                    SyntaxTree::LambdaOp(_) => (),
+                    SyntaxTree::BuiltinOp(op) => return Ok(op(x.clone())),
+                    SyntaxTree::LambdaOp(_) => (), // fallthrough
                     _ => return Ok(SyntaxTree::SyntaxError),
                 };
             }
@@ -75,7 +80,7 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
                 }
                 return eval(&op.body, &mut local_env);
             }
-            return Ok(SyntaxTree::List(v.clone()));
+            return Ok(x.clone());
         }
         _ => Err(()),
     }

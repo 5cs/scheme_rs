@@ -12,6 +12,12 @@ pub trait UnaryOps {
     fn quote(&self) -> Self;
     fn car(&self) -> Self;
     fn cdr(&self) -> Self;
+    fn list(&self) -> Self;
+    fn is_null(&self) -> Self;
+    fn is_number(&self) -> Self;
+    fn is_symbol(&self) -> Self;
+    fn is_list(&self) -> Self;
+    fn is_procedure(&self) -> Self;
 }
 
 impl Add for SyntaxTree {
@@ -213,6 +219,51 @@ impl UnaryOps for SyntaxTree {
         match self {
             SyntaxTree::List(v) => SyntaxTree::List(v[1..].to_vec()),
             _ => SyntaxTree::SyntaxError,
+        }
+    }
+
+    fn list(&self) -> Self {
+        match self {
+            SyntaxTree::List(v) => SyntaxTree::List(v[1..].to_vec()),
+            _ => SyntaxTree::SyntaxError,
+        }
+    }
+
+    fn is_null(&self) -> Self {
+        match self {
+            SyntaxTree::List(v) => SyntaxTree::Bool(v.len() == 0),
+            _ => SyntaxTree::Bool(false),
+        }
+    }
+
+    fn is_number(&self) -> Self {
+        match self {
+            SyntaxTree::Integer(_) | SyntaxTree::Float(_) => SyntaxTree::Bool(true),
+            _ => SyntaxTree::Bool(false),
+        }
+    }
+
+    fn is_symbol(&self) -> Self {
+        match self {
+            SyntaxTree::Symbol(_) => SyntaxTree::Bool(true),
+            _ => SyntaxTree::Bool(false),
+        }
+    }
+
+    fn is_list(&self) -> Self {
+        match self {
+            SyntaxTree::List(_) => SyntaxTree::Bool(true),
+            _ => SyntaxTree::Bool(false),
+        }
+    }
+
+    fn is_procedure(&self) -> Self {
+        match self {
+            SyntaxTree::BuiltinOp(_)
+            | SyntaxTree::UnaryOp(_)
+            | SyntaxTree::BinaryOp(_)
+            | SyntaxTree::LambdaOp(_) => SyntaxTree::Bool(true),
+            _ => SyntaxTree::Bool(false),
         }
     }
 }

@@ -11,6 +11,7 @@ pub enum SyntaxTree {
     List(Vec<SyntaxTree>),
     BinaryOp(Rc<dyn Fn(SyntaxTree, SyntaxTree) -> SyntaxTree>),
     UnaryOp(Rc<dyn Fn(SyntaxTree) -> SyntaxTree>),
+    BuiltinOp(Rc<dyn Fn(SyntaxTree) -> SyntaxTree>),
     LambdaOp(Procedure),
     SyntaxError,
 }
@@ -32,6 +33,7 @@ impl fmt::Debug for SyntaxTree {
             SyntaxTree::BinaryOp(_) => f.write_str(&format!("BinaryOp")),
             SyntaxTree::UnaryOp(_) => f.write_str(&format!("UnaryOp")),
             SyntaxTree::LambdaOp(_) => f.write_str(&format!("LambdaOp")),
+            SyntaxTree::BuiltinOp(_) => f.write_str(&format!("BuiltinOp")),
             SyntaxTree::List(v) => {
                 let mut s = String::new();
                 s.push('(');
@@ -58,6 +60,7 @@ impl Clone for SyntaxTree {
             SyntaxTree::Symbol(v) => SyntaxTree::Symbol(v.to_string()),
             SyntaxTree::BinaryOp(v) => SyntaxTree::BinaryOp(v.clone()),
             SyntaxTree::LambdaOp(v) => SyntaxTree::LambdaOp(v.clone()),
+            SyntaxTree::BuiltinOp(v) => SyntaxTree::BuiltinOp(v.clone()),
             SyntaxTree::List(v) => SyntaxTree::List(v.clone()), // deep copy?
             _ => SyntaxTree::SyntaxError,
         }
