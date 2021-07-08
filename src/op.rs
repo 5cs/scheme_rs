@@ -23,17 +23,11 @@ pub trait UnaryOps {
 impl Add for SyntaxTree {
     type Output = Self;
     fn add(self, other: Self) -> Self {
-        match self {
-            SyntaxTree::Integer(l) => match other {
-                SyntaxTree::Integer(r) => SyntaxTree::Integer(l + r),
-                SyntaxTree::Float(r) => SyntaxTree::Float((l as f32) + r),
-                _ => SyntaxTree::SyntaxError,
-            },
-            SyntaxTree::Float(l) => match other {
-                SyntaxTree::Integer(r) => SyntaxTree::Float(l + (r as f32)),
-                SyntaxTree::Float(r) => SyntaxTree::Float(l + r),
-                _ => SyntaxTree::SyntaxError,
-            },
+        match (self, other) {
+            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l + r),
+            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => SyntaxTree::Float((l as f32) + r),
+            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => SyntaxTree::Float(l + (r as f32)),
+            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l + r),
             _ => SyntaxTree::SyntaxError,
         }
     }
@@ -42,17 +36,11 @@ impl Add for SyntaxTree {
 impl Sub for SyntaxTree {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
-        match self {
-            SyntaxTree::Integer(l) => match other {
-                SyntaxTree::Integer(r) => SyntaxTree::Integer(l - r),
-                SyntaxTree::Float(r) => SyntaxTree::Float((l as f32) - r),
-                _ => SyntaxTree::SyntaxError,
-            },
-            SyntaxTree::Float(l) => match other {
-                SyntaxTree::Integer(r) => SyntaxTree::Float(l - (r as f32)),
-                SyntaxTree::Float(r) => SyntaxTree::Float(l - r),
-                _ => SyntaxTree::SyntaxError,
-            },
+        match (self, other) {
+            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l - r),
+            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => SyntaxTree::Float((l as f32) - r),
+            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => SyntaxTree::Float(l - (r as f32)),
+            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l - r),
             _ => SyntaxTree::SyntaxError,
         }
     }
@@ -61,17 +49,11 @@ impl Sub for SyntaxTree {
 impl Mul for SyntaxTree {
     type Output = Self;
     fn mul(self, other: Self) -> Self {
-        match self {
-            SyntaxTree::Integer(l) => match other {
-                SyntaxTree::Integer(r) => SyntaxTree::Integer(l * r),
-                SyntaxTree::Float(r) => SyntaxTree::Float((l as f32) * r),
-                _ => SyntaxTree::SyntaxError,
-            },
-            SyntaxTree::Float(l) => match other {
-                SyntaxTree::Integer(r) => SyntaxTree::Float(l * (r as f32)),
-                SyntaxTree::Float(r) => SyntaxTree::Float(l * r),
-                _ => SyntaxTree::SyntaxError,
-            },
+        match (self, other) {
+            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l * r),
+            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => SyntaxTree::Float((l as f32) * r),
+            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => SyntaxTree::Float(l * (r as f32)),
+            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l * r),
             _ => SyntaxTree::SyntaxError,
         }
     }
@@ -80,17 +62,11 @@ impl Mul for SyntaxTree {
 impl Div for SyntaxTree {
     type Output = Self;
     fn div(self, other: Self) -> Self {
-        match self {
-            SyntaxTree::Integer(l) => match other {
-                SyntaxTree::Integer(r) => SyntaxTree::Integer(l / r),
-                SyntaxTree::Float(r) => SyntaxTree::Float((l as f32) / r),
-                _ => SyntaxTree::SyntaxError,
-            },
-            SyntaxTree::Float(l) => match other {
-                SyntaxTree::Integer(r) => SyntaxTree::Float(l / (r as f32)),
-                SyntaxTree::Float(r) => SyntaxTree::Float(l / r),
-                _ => SyntaxTree::SyntaxError,
-            },
+        match (self, other) {
+            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l / r),
+            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => SyntaxTree::Float((l as f32) / r),
+            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => SyntaxTree::Float(l / (r as f32)),
+            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l / r),
             _ => SyntaxTree::SyntaxError,
         }
     }
@@ -99,31 +75,15 @@ impl Div for SyntaxTree {
 // eq, ne
 impl PartialEq for SyntaxTree {
     fn eq(&self, other: &SyntaxTree) -> bool {
-        match self {
-            SyntaxTree::Nil => match other {
-                SyntaxTree::Nil => true,
-                _ => false,
-            },
-            SyntaxTree::Bool(l) => match other {
-                SyntaxTree::Bool(r) => l == r,
-                _ => false,
-            },
-            SyntaxTree::Integer(l) => match other {
-                SyntaxTree::Integer(r) => l == r,
-                _ => false,
-            },
-            SyntaxTree::Float(l) => match other {
-                SyntaxTree::Float(r) => l == r,
-                _ => false,
-            },
-            SyntaxTree::Symbol(l) => match other {
-                SyntaxTree::Symbol(r) => l == r,
-                _ => false,
-            },
-            SyntaxTree::List(l) => match other {
-                SyntaxTree::List(r) => l.len() == r.len() && l.iter().zip(r).all(|(x, y)| x == y),
-                _ => false,
-            },
+        match (self, other) {
+            (SyntaxTree::Nil, SyntaxTree::Nil) => true,
+            (SyntaxTree::Bool(l), SyntaxTree::Bool(r)) => l == r,
+            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => l == r,
+            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => l == r,
+            (SyntaxTree::Symbol(l), SyntaxTree::Symbol(r)) => l == r,
+            (SyntaxTree::List(l), SyntaxTree::List(r)) => {
+                l.len() == r.len() && l.iter().zip(r).all(|(x, y)| x == y)
+            }
             _ => false,
         }
     }
@@ -132,21 +92,13 @@ impl PartialEq for SyntaxTree {
 // lt, le, gt, ge
 impl PartialOrd for SyntaxTree {
     fn partial_cmp(&self, other: &SyntaxTree) -> Option<Ordering> {
-        match self {
-            SyntaxTree::Integer(l) => match other {
-                SyntaxTree::Integer(r) => l.partial_cmp(r),
-                SyntaxTree::Float(r) => (*l as f32).partial_cmp(r),
-                _ => None,
-            },
-            SyntaxTree::Float(l) => match other {
-                SyntaxTree::Integer(r) => l.partial_cmp(&(*r as f32)),
-                SyntaxTree::Float(r) => l.partial_cmp(r),
-                _ => None,
-            },
-            SyntaxTree::Symbol(l) => match other {
-                SyntaxTree::Symbol(r) => l.partial_cmp(r),
-                _ => None,
-            },
+        match (self, other) {
+            (SyntaxTree::Bool(l), SyntaxTree::Bool(r)) => l.partial_cmp(r),
+            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => l.partial_cmp(r),
+            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => (*l as f32).partial_cmp(r),
+            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => l.partial_cmp(&(*r as f32)),
+            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => l.partial_cmp(r),
+            (SyntaxTree::Symbol(l), SyntaxTree::Symbol(r)) => l.partial_cmp(r),
             _ => None,
         }
     }
@@ -154,29 +106,27 @@ impl PartialOrd for SyntaxTree {
 
 impl BinaryOps for SyntaxTree {
     fn append(&self, other: SyntaxTree) -> Self {
-        match self {
-            SyntaxTree::List(l) => match other {
-                SyntaxTree::List(r) => l.iter().cloned().chain(r.iter().cloned()).collect(),
-                _ => SyntaxTree::SyntaxError,
-            },
-            SyntaxTree::Integer(_) => self.clone() + other,
-            SyntaxTree::Float(_) => self.clone() + other,
+        match (self, other) {
+            (SyntaxTree::List(l), SyntaxTree::List(ref r)) => {
+                l.iter().cloned().chain(r.iter().cloned()).collect()
+            }
+            (SyntaxTree::Integer(_), r) | (SyntaxTree::Float(_), r) => self.clone() + r,
             _ => SyntaxTree::SyntaxError,
         }
     }
 
     fn cons(&self, other: SyntaxTree) -> Self {
-        match other {
-            SyntaxTree::List(r) => match self {
-                SyntaxTree::List(l) => l.iter().cloned().chain(r.iter().cloned()).collect(),
-                SyntaxTree::Integer(_) | SyntaxTree::Float(_) => [self.clone()]
-                    .to_vec()
-                    .iter()
-                    .cloned()
-                    .chain(r.iter().cloned())
-                    .collect(),
-                _ => SyntaxTree::SyntaxError,
-            },
+        match (self, other) {
+            (SyntaxTree::List(l), SyntaxTree::List(ref r)) => {
+                l.iter().cloned().chain(r.iter().cloned()).collect()
+            }
+            (SyntaxTree::Integer(_), SyntaxTree::List(r))
+            | (SyntaxTree::Float(_), SyntaxTree::List(r)) => [self.clone()]
+                .to_vec()
+                .iter()
+                .cloned()
+                .chain(r.iter().cloned())
+                .collect(),
             _ => SyntaxTree::SyntaxError,
         }
     }
@@ -193,16 +143,8 @@ impl UnaryOps for SyntaxTree {
 
     fn quote(&self) -> Self {
         match self {
-            SyntaxTree::Integer(v) => {
-                let mut l: Vec<SyntaxTree> = vec![];
-                l.push(SyntaxTree::Integer(*v));
-                SyntaxTree::List(l)
-            }
-            SyntaxTree::Float(v) => {
-                let mut l: Vec<SyntaxTree> = vec![];
-                l.push(SyntaxTree::Float(*v));
-                SyntaxTree::List(l)
-            }
+            SyntaxTree::Integer(v) => SyntaxTree::List(vec![SyntaxTree::Integer(*v)]),
+            SyntaxTree::Float(v) => SyntaxTree::List(vec![SyntaxTree::Float(*v)]),
             SyntaxTree::List(v) => SyntaxTree::List(v.clone()),
             _ => SyntaxTree::SyntaxError,
         }
