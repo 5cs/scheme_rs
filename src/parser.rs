@@ -8,14 +8,11 @@ fn tokenize(program: &str) -> Vec<String> {
         .replace("\t", " ");
     let stream = tmp.trim().split(" ");
 
-    let mut tokens: Vec<String> = vec![];
-    for x in stream {
-        if x == "" {
-            continue;
-        }
-        tokens.push(x.to_string());
-    }
-    tokens
+    stream
+        .into_iter()
+        .filter(|token| token != &"")
+        .map(|token| token.to_string())
+        .collect()
 }
 
 fn read_from_tokens(tokens: &mut Vec<String>) -> Result<SyntaxTree, ()> {
