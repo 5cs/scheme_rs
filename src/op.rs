@@ -20,57 +20,31 @@ pub trait UnaryOps {
     fn is_procedure(&self) -> Self;
 }
 
-impl Add for &SyntaxTree {
-    type Output = SyntaxTree;
-    fn add(self, other: Self) -> Self::Output {
-        match (self, other) {
-            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l + r),
-            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => SyntaxTree::Float((*l as f32) + r),
-            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => SyntaxTree::Float(l + (*r as f32)),
-            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l + r),
-            _ => SyntaxTree::SyntaxError,
+macro_rules! arith_op {
+    ($bound:ident, $func:ident, $op:tt) => {
+        impl $bound for &SyntaxTree {
+            type Output = SyntaxTree;
+            fn $func(self, other: Self) -> Self::Output {
+                match (self, other) {
+                    (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l $op r),
+                    (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l $op r),
+                    (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => {
+                        SyntaxTree::Float((*l as f32) $op r)
+                    }
+                    (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => {
+                        SyntaxTree::Float(l $op (*r as f32))
+                    }
+                    _ => SyntaxTree::SyntaxError,
+                }
+            }
         }
-    }
+    };
 }
 
-impl Sub for &SyntaxTree {
-    type Output = SyntaxTree;
-    fn sub(self, other: Self) -> Self::Output {
-        match (self, other) {
-            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l - r),
-            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => SyntaxTree::Float((*l as f32) - r),
-            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => SyntaxTree::Float(l - (*r as f32)),
-            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l - r),
-            _ => SyntaxTree::SyntaxError,
-        }
-    }
-}
-
-impl Mul for &SyntaxTree {
-    type Output = SyntaxTree;
-    fn mul(self, other: Self) -> Self::Output {
-        match (self, other) {
-            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l * r),
-            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => SyntaxTree::Float((*l as f32) * r),
-            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => SyntaxTree::Float(l * (*r as f32)),
-            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l * r),
-            _ => SyntaxTree::SyntaxError,
-        }
-    }
-}
-
-impl Div for &SyntaxTree {
-    type Output = SyntaxTree;
-    fn div(self, other: Self) -> Self::Output {
-        match (self, other) {
-            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l / r),
-            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => SyntaxTree::Float((*l as f32) / r),
-            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => SyntaxTree::Float(l / (*r as f32)),
-            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l / r),
-            _ => SyntaxTree::SyntaxError,
-        }
-    }
-}
+arith_op!(Add, add, +);
+arith_op!(Sub, sub, -);
+arith_op!(Mul, mul, *);
+arith_op!(Div, div, /);
 
 // eq, ne
 impl PartialEq for SyntaxTree {
