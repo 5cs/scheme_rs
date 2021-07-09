@@ -48,13 +48,13 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
                     SyntaxTree::BinaryOp(op) => {
                         let arg1 = eval(&v[1], env)?;
                         let arg2 = eval(&v[2], env)?;
-                        return Ok(op(arg1, arg2));
+                        return Ok(op(&arg1, &arg2));
                     }
                     SyntaxTree::UnaryOp(op) => {
                         let arg = eval(&v[1], env)?;
-                        return Ok(op(arg));
+                        return Ok(op(&arg));
                     }
-                    SyntaxTree::BuiltinOp(op) => return Ok(op(x.clone())),
+                    SyntaxTree::BuiltinOp(op) => return Ok(op(x)),
                     SyntaxTree::LambdaOp(_) => (), // fallthrough
                     _ => return Ok(SyntaxTree::SyntaxError),
                 };

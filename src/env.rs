@@ -6,9 +6,9 @@ use std::rc::Rc;
 #[derive(Clone)]
 pub struct Env {
     outer: Option<Box<Env>>,
-    binary_ops: HashMap<&'static str, Rc<dyn Fn(SyntaxTree, SyntaxTree) -> SyntaxTree>>,
-    unary_ops: HashMap<&'static str, Rc<dyn Fn(SyntaxTree) -> SyntaxTree>>,
-    builtin_ops: HashMap<&'static str, Rc<dyn Fn(SyntaxTree) -> SyntaxTree>>,
+    binary_ops: HashMap<&'static str, Rc<dyn Fn(&SyntaxTree, &SyntaxTree) -> SyntaxTree>>,
+    unary_ops: HashMap<&'static str, Rc<dyn Fn(&SyntaxTree) -> SyntaxTree>>,
+    builtin_ops: HashMap<&'static str, Rc<dyn Fn(&SyntaxTree) -> SyntaxTree>>,
     vars: HashMap<String, SyntaxTree>,
 }
 
@@ -56,21 +56,21 @@ impl Env {
 
     fn make_binary_op<F: 'static>(&mut self, name: &'static str, func: F)
     where
-        F: Fn(SyntaxTree, SyntaxTree) -> SyntaxTree,
+        F: Fn(&SyntaxTree, &SyntaxTree) -> SyntaxTree,
     {
         self.binary_ops.insert(name, Rc::new(func));
     }
 
     fn make_unary_op<F: 'static>(&mut self, name: &'static str, func: F)
     where
-        F: Fn(SyntaxTree) -> SyntaxTree,
+        F: Fn(&SyntaxTree) -> SyntaxTree,
     {
         self.unary_ops.insert(name, Rc::new(func));
     }
 
     fn make_builtin_op<F: 'static>(&mut self, name: &'static str, func: F)
     where
-        F: Fn(SyntaxTree) -> SyntaxTree,
+        F: Fn(&SyntaxTree) -> SyntaxTree,
     {
         self.builtin_ops.insert(name, Rc::new(func));
     }

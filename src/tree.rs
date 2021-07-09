@@ -9,9 +9,9 @@ pub enum SyntaxTree {
     Float(f32),
     Symbol(String),
     List(Vec<SyntaxTree>),
-    BinaryOp(Rc<dyn Fn(SyntaxTree, SyntaxTree) -> SyntaxTree>),
-    UnaryOp(Rc<dyn Fn(SyntaxTree) -> SyntaxTree>),
-    BuiltinOp(Rc<dyn Fn(SyntaxTree) -> SyntaxTree>),
+    BinaryOp(Rc<dyn Fn(&SyntaxTree, &SyntaxTree) -> SyntaxTree>),
+    UnaryOp(Rc<dyn Fn(&SyntaxTree) -> SyntaxTree>),
+    BuiltinOp(Rc<dyn Fn(&SyntaxTree) -> SyntaxTree>),
     LambdaOp(Procedure),
     SyntaxError,
 }
