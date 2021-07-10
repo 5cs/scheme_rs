@@ -1,37 +1,37 @@
 use super::env::Env;
 use super::tree::Procedure;
-use super::tree::SyntaxTree;
+use super::tree::SyntaxTree::{self, *};
 
 pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
     match x {
-        SyntaxTree::Bool(v) => Ok(SyntaxTree::Bool(*v)),
-        SyntaxTree::Integer(v) => Ok(SyntaxTree::Integer(*v)),
-        SyntaxTree::Float(v) => Ok(SyntaxTree::Float(*v)),
-        SyntaxTree::Symbol(v) => env.find(v),
-        SyntaxTree::List(v) => {
+        Bool(v) => Ok(Bool(*v)),
+        Integer(v) => Ok(Integer(*v)),
+        Float(v) => Ok(Float(*v)),
+        Symbol(v) => env.find(v),
+        List(v) => {
             if v.len() == 0 {
                 return Ok(x.clone());
             }
 
-            if let SyntaxTree::Symbol(ref s) = v[0] {
+            if let Symbol(ref s) = v[0] {
                 if s == "if" {
                     let (test, conseq, alt) = (v[1].clone(), v[2].clone(), v[3].clone());
                     let pred = eval(&test, env)?;
                     let exp = match pred {
-                        SyntaxTree::Bool(true) => conseq,
-                        SyntaxTree::Bool(false) => alt,
-                        _ => SyntaxTree::SyntaxError,
+                        Bool(true) => conseq,
+                        Bool(false) => alt,
+                        _ => SyntaxError,
                     };
                     return eval(&exp, env);
                 }
 
                 if s == "define" {
                     let var = v[1].clone();
-                    if let SyntaxTree::Symbol(ref k) = var {
+                    if let Symbol(ref k) = var {
                         let res = eval(&v[2], env)?;
                         env.make_var(k, &res)
                     }
-                    return Ok(SyntaxTree::Nil);
+                    return Ok(Nil);
                 }
 
                 if s == "lambda" {
@@ -40,28 +40,28 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
                         parms: Box::new(parms),
                         body: Box::new(body),
                     };
-                    return Ok(SyntaxTree::LambdaOp(proc));
+                    return Ok(LambdaOp(proc));
                 }
 
                 let proc = eval(&v[0], env)?;
                 match proc {
-                    SyntaxTree::BinaryOp(op) => {
+                    BinaryOp(op) => {
                         let arg1 = eval(&v[1], env)?;
                         let arg2 = eval(&v[2], env)?;
                         return Ok(op(&arg1, &arg2));
                     }
-                    SyntaxTree::UnaryOp(op) => {
+                    UnaryOp(op) => {
                         let arg = eval(&v[1], env)?;
                         return Ok(op(&arg));
                     }
-                    SyntaxTree::BuiltinOp(op) => return Ok(op(x)),
-                    SyntaxTree::LambdaOp(_) => (), // fallthrough
-                    _ => return Ok(SyntaxTree::SyntaxError),
+                    BuiltinOp(op) => return Ok(op(x)),
+                    LambdaOp(_) => (), // fallthrough
+                    _ => return Ok(SyntaxError),
                 };
             }
 
             let proc = eval(&v[0], env)?;
-            if let SyntaxTree::LambdaOp(op) = proc {
+            if let LambdaOp(op) = proc {
                 // eval args
                 let mut args: Vec<SyntaxTree> = vec![];
                 for i in 1..v.len() {
@@ -71,9 +71,9 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
 
                 // bind args
                 let mut local_env = Env::make_env(Box::new(env.clone()));
-                if let SyntaxTree::List(p) = *op.parms {
+                if let List(p) = *op.parms {
                     for i in 0..args.len() {
-                        if let SyntaxTree::Symbol(k) = &p[i] {
+                        if let Symbol(k) = &p[i] {
                             local_env.make_var(k, &args[i]);
                         }
                     }

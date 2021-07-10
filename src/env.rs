@@ -1,5 +1,5 @@
 use super::op::{BinaryOps, UnaryOps};
-use super::tree::SyntaxTree;
+use super::tree::SyntaxTree::{self, *};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -31,13 +31,13 @@ impl Env {
         env.make_binary_op("-", |x, y| x - y);
         env.make_binary_op("*", |x, y| x * y);
         env.make_binary_op("/", |x, y| x / y);
-        env.make_binary_op(">", |x, y| SyntaxTree::Bool(x > y));
-        env.make_binary_op("<", |x, y| SyntaxTree::Bool(x < y));
-        env.make_binary_op(">=", |x, y| SyntaxTree::Bool(x >= y));
-        env.make_binary_op("<=", |x, y| SyntaxTree::Bool(x <= y));
-        env.make_binary_op("==", |x, y| SyntaxTree::Bool(x == y));
-        env.make_binary_op("!=", |x, y| SyntaxTree::Bool(x != y));
-        env.make_binary_op("equal?", |x, y| SyntaxTree::Bool(x == y));
+        env.make_binary_op(">", |x, y| Bool(x > y));
+        env.make_binary_op("<", |x, y| Bool(x < y));
+        env.make_binary_op(">=", |x, y| Bool(x >= y));
+        env.make_binary_op("<=", |x, y| Bool(x <= y));
+        env.make_binary_op("==", |x, y| Bool(x == y));
+        env.make_binary_op("!=", |x, y| Bool(x != y));
+        env.make_binary_op("equal?", |x, y| Bool(x == y));
         env.make_binary_op("append", |x, y| x.append(y));
         env.make_binary_op("cons", |x, y| x.cons(y));
         env.make_unary_op("abs", |x| x.abs());
@@ -90,19 +90,15 @@ impl Env {
         if self.vars.contains_key(x) {
             Ok(self.vars.get(x).unwrap().clone())
         } else if self.binary_ops.contains_key(x) {
-            Ok(SyntaxTree::BinaryOp(
-                self.binary_ops.get(x).unwrap().clone(),
-            ))
+            Ok(BinaryOp(self.binary_ops.get(x).unwrap().clone()))
         } else if self.unary_ops.contains_key(x) {
-            Ok(SyntaxTree::UnaryOp(self.unary_ops.get(x).unwrap().clone()))
+            Ok(UnaryOp(self.unary_ops.get(x).unwrap().clone()))
         } else if self.builtin_ops.contains_key(x) {
-            Ok(SyntaxTree::BuiltinOp(
-                self.builtin_ops.get(x).unwrap().clone(),
-            ))
+            Ok(BuiltinOp(self.builtin_ops.get(x).unwrap().clone()))
         } else {
             match self.outer {
                 Some(ref v) => v.find(x),
-                None => Ok(SyntaxTree::Symbol(x.to_owned())),
+                None => Ok(Symbol(x.to_owned())),
             }
         }
     }

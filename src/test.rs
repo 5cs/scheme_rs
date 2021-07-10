@@ -1,4 +1,4 @@
-use super::tree::SyntaxTree;
+use super::tree::SyntaxTree::*;
 use super::*;
 
 #[test]
@@ -7,7 +7,7 @@ fn test_binary_op() {
     let program = "(+ 1 2)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Integer(3)
+        Integer(3)
     );
 }
 
@@ -17,11 +17,7 @@ fn test_append_op() {
     let program = "(append (quote (1 1)) (quote 1))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::List(vec![
-            SyntaxTree::Integer(1),
-            SyntaxTree::Integer(1),
-            SyntaxTree::Integer(1)
-        ])
+        List(vec![Integer(1), Integer(1), Integer(1)])
     );
 }
 
@@ -31,11 +27,7 @@ fn test_cons() {
     let program = "(cons (quote (0 1)) (quote (2)))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::List(vec![
-            SyntaxTree::Integer(0),
-            SyntaxTree::Integer(1),
-            SyntaxTree::Integer(2)
-        ])
+        List(vec![Integer(0), Integer(1), Integer(2)])
     );
 }
 
@@ -45,7 +37,7 @@ fn test_car() {
     let program = "(car (quote ((0 1) 2)))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::List(vec![SyntaxTree::Integer(0), SyntaxTree::Integer(1)])
+        List(vec![Integer(0), Integer(1)])
     );
 }
 
@@ -55,7 +47,7 @@ fn test_cdr() {
     let program = "(cdr (quote ((0 1) 2)))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::List(vec![SyntaxTree::Integer(2)])
+        List(vec![Integer(2)])
     );
 }
 
@@ -65,67 +57,67 @@ fn test_unary_op() {
     let program = "(abs (- 10 2))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Integer(8)
+        Integer(8)
     );
 
     let program = "(list 1 2)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::List(vec![SyntaxTree::Integer(1), SyntaxTree::Integer(2),])
+        List(vec![Integer(1), Integer(2),])
     );
 
     let program = "(null? 1)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Bool(false)
+        Bool(false)
     );
 
     let program = "(null? (quote ()))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Bool(true)
+        Bool(true)
     );
 
     let program = "(number? (quote ()))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Bool(false)
+        Bool(false)
     );
 
     let program = "(number? 1)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Bool(true)
+        Bool(true)
     );
 
     let program = "(symbol? 'a)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Bool(true)
+        Bool(true)
     );
 
     let program = "(symbol? 1)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Bool(false)
+        Bool(false)
     );
 
     let program = "(list? (quote 1))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Bool(true)
+        Bool(true)
     );
 
     let program = "(list? 'a)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Bool(false)
+        Bool(false)
     );
 
     let program = "(procedure? +)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Bool(true)
+        Bool(true)
     );
 }
 
@@ -135,7 +127,7 @@ fn test_if() {
     let program = "(if (> (+ 1 1) 1) (+ (- 2 1) (* 2 4)) 5)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Integer(9)
+        Integer(9)
     );
 }
 
@@ -145,13 +137,13 @@ fn test_define() {
     let program = "(define a 1)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Nil
+        Nil
     );
 
     let program = "a";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Integer(1)
+        Integer(1)
     );
 }
 
@@ -164,7 +156,7 @@ fn test_lambda_op() {
                               (- 0 x) x)))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Nil
+        Nil
     );
 
     let program = "myabs";
@@ -173,7 +165,7 @@ fn test_lambda_op() {
         Ok(tree) => match eval(&tree, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
             Ok(val) => match val {
-                SyntaxTree::LambdaOp(_) => assert!(true),
+                LambdaOp(_) => assert!(true),
                 _ => assert!(false, "defined var wrong result"),
             },
         },
@@ -182,7 +174,7 @@ fn test_lambda_op() {
     let program = "(myabs -1)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Integer(1)
+        Integer(1)
     );
 }
 
@@ -194,7 +186,7 @@ fn test_anonymous_lambda() {
                               (- 0 x) x)) -1)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Integer(1)
+        Integer(1)
     );
 }
 
@@ -231,9 +223,9 @@ fn test_sqrt_newton() {
                 &mut global_env
             )
             .unwrap()
-                - &SyntaxTree::Float(i as f32))
+                - &Float(i as f32))
                 .abs()
-                < SyntaxTree::Float(0.001)
+                < Float(0.001)
         )
     }
 }
@@ -249,7 +241,7 @@ fn test_fibonacci() {
     let program = "(fib 10)";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Integer(55)
+        Integer(55)
     );
 }
 
@@ -270,6 +262,6 @@ fn test_fibonacci_cps() {
     let program = "(fib-cps 10 (lambda (x) x))";
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
-        SyntaxTree::Integer(55)
+        Integer(55)
     );
 }

@@ -1,4 +1,4 @@
-use super::tree::SyntaxTree;
+use super::tree::SyntaxTree::{self, *};
 
 fn tokenize(program: &str) -> Vec<String> {
     let tmp = program
@@ -31,15 +31,15 @@ fn read_from_tokens(tokens: &mut Vec<String>) -> Result<SyntaxTree, ()> {
             }
         }
         tokens.drain(0..1);
-        Ok(SyntaxTree::List(l))
+        Ok(List(l))
     } else if token != ")" {
         // Atom type: int, float, str
         if let Ok(v) = token.parse::<i32>() {
-            Ok(SyntaxTree::Integer(v))
+            Ok(Integer(v))
         } else if let Ok(v) = token.parse::<f32>() {
-            Ok(SyntaxTree::Float(v))
+            Ok(Float(v))
         } else {
-            Ok(SyntaxTree::Symbol(token))
+            Ok(Symbol(token))
         }
     } else {
         Err(())

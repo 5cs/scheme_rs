@@ -1,4 +1,4 @@
-use super::tree::SyntaxTree;
+use super::tree::SyntaxTree::{self, *};
 use std::cmp::Ordering;
 use std::ops::{Add, Div, Mul, Sub};
 
@@ -26,15 +26,15 @@ macro_rules! arith_op {
             type Output = SyntaxTree;
             fn $func(self, other: Self) -> Self::Output {
                 match (self, other) {
-                    (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => SyntaxTree::Integer(l $op r),
-                    (SyntaxTree::Float(l), SyntaxTree::Float(r)) => SyntaxTree::Float(l $op r),
-                    (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => {
-                        SyntaxTree::Float((*l as f32) $op r)
+                    (Integer(l), Integer(r)) => Integer(l $op r),
+                    (Float(l), Float(r)) => Float(l $op r),
+                    (Integer(l), Float(r)) => {
+                        Float((*l as f32) $op r)
                     }
-                    (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => {
-                        SyntaxTree::Float(l $op (*r as f32))
+                    (Float(l), Integer(r)) => {
+                        Float(l $op (*r as f32))
                     }
-                    _ => SyntaxTree::SyntaxError,
+                    _ => SyntaxError,
                 }
             }
         }
@@ -50,14 +50,12 @@ arith_op!(Div, div, /);
 impl PartialEq for SyntaxTree {
     fn eq(&self, other: &SyntaxTree) -> bool {
         match (self, other) {
-            (SyntaxTree::Nil, SyntaxTree::Nil) => true,
-            (SyntaxTree::Bool(l), SyntaxTree::Bool(r)) => l == r,
-            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => l == r,
-            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => l == r,
-            (SyntaxTree::Symbol(l), SyntaxTree::Symbol(r)) => l == r,
-            (SyntaxTree::List(l), SyntaxTree::List(r)) => {
-                l.len() == r.len() && l.iter().zip(r).all(|(x, y)| x == y)
-            }
+            (Nil, Nil) => true,
+            (Bool(l), Bool(r)) => l == r,
+            (Integer(l), Integer(r)) => l == r,
+            (Float(l), Float(r)) => l == r,
+            (Symbol(l), Symbol(r)) => l == r,
+            (List(l), List(r)) => l.len() == r.len() && l.iter().zip(r).all(|(x, y)| x == y),
             _ => false,
         }
     }
@@ -67,12 +65,12 @@ impl PartialEq for SyntaxTree {
 impl PartialOrd for SyntaxTree {
     fn partial_cmp(&self, other: &SyntaxTree) -> Option<Ordering> {
         match (self, other) {
-            (SyntaxTree::Bool(l), SyntaxTree::Bool(r)) => l.partial_cmp(r),
-            (SyntaxTree::Integer(l), SyntaxTree::Integer(r)) => l.partial_cmp(r),
-            (SyntaxTree::Integer(l), SyntaxTree::Float(r)) => (*l as f32).partial_cmp(r),
-            (SyntaxTree::Float(l), SyntaxTree::Integer(r)) => l.partial_cmp(&(*r as f32)),
-            (SyntaxTree::Float(l), SyntaxTree::Float(r)) => l.partial_cmp(r),
-            (SyntaxTree::Symbol(l), SyntaxTree::Symbol(r)) => l.partial_cmp(r),
+            (Bool(l), Bool(r)) => l.partial_cmp(r),
+            (Integer(l), Integer(r)) => l.partial_cmp(r),
+            (Integer(l), Float(r)) => (*l as f32).partial_cmp(r),
+            (Float(l), Integer(r)) => l.partial_cmp(&(*r as f32)),
+            (Float(l), Float(r)) => l.partial_cmp(r),
+            (Symbol(l), Symbol(r)) => l.partial_cmp(r),
             _ => None,
         }
     }
@@ -81,27 +79,22 @@ impl PartialOrd for SyntaxTree {
 impl BinaryOps for SyntaxTree {
     fn append(&self, other: &SyntaxTree) -> Self {
         match (self, other) {
-            (SyntaxTree::List(l), SyntaxTree::List(ref r)) => {
-                l.iter().cloned().chain(r.iter().cloned()).collect()
-            }
-            (SyntaxTree::Integer(_), r) | (SyntaxTree::Float(_), r) => self + &r,
-            _ => SyntaxTree::SyntaxError,
+            (List(l), List(ref r)) => l.iter().cloned().chain(r.iter().cloned()).collect(),
+            (Integer(_), r) | (Float(_), r) => self + &r,
+            _ => SyntaxError,
         }
     }
 
     fn cons(&self, other: &SyntaxTree) -> Self {
         match (self, other) {
-            (SyntaxTree::List(l), SyntaxTree::List(ref r)) => {
-                l.iter().cloned().chain(r.iter().cloned()).collect()
-            }
-            (SyntaxTree::Integer(_), SyntaxTree::List(r))
-            | (SyntaxTree::Float(_), SyntaxTree::List(r)) => [self.clone()]
+            (List(l), List(ref r)) => l.iter().cloned().chain(r.iter().cloned()).collect(),
+            (Integer(_), List(r)) | (Float(_), List(r)) => [self.clone()]
                 .to_vec()
                 .iter()
                 .cloned()
                 .chain(r.iter().cloned())
                 .collect(),
-            _ => SyntaxTree::SyntaxError,
+            _ => SyntaxError,
         }
     }
 }
@@ -109,77 +102,74 @@ impl BinaryOps for SyntaxTree {
 impl UnaryOps for SyntaxTree {
     fn abs(&self) -> Self {
         match self {
-            SyntaxTree::Integer(v) => SyntaxTree::Integer(v.abs()),
-            SyntaxTree::Float(v) => SyntaxTree::Float(v.abs()),
-            _ => SyntaxTree::SyntaxError,
+            Integer(v) => Integer(v.abs()),
+            Float(v) => Float(v.abs()),
+            _ => SyntaxError,
         }
     }
 
     fn quote(&self) -> Self {
         match self {
-            SyntaxTree::Integer(v) => SyntaxTree::List(vec![SyntaxTree::Integer(*v)]),
-            SyntaxTree::Float(v) => SyntaxTree::List(vec![SyntaxTree::Float(*v)]),
-            SyntaxTree::List(v) => SyntaxTree::List(v.clone()),
-            _ => SyntaxTree::SyntaxError,
+            Integer(v) => List(vec![Integer(*v)]),
+            Float(v) => List(vec![Float(*v)]),
+            List(v) => List(v.clone()),
+            _ => SyntaxError,
         }
     }
 
     fn car(&self) -> Self {
         match self {
-            SyntaxTree::List(v) => v[0].clone(),
-            _ => SyntaxTree::SyntaxError,
+            List(v) => v[0].clone(),
+            _ => SyntaxError,
         }
     }
 
     fn cdr(&self) -> Self {
         match self {
-            SyntaxTree::List(v) => SyntaxTree::List(v[1..].to_vec()),
-            _ => SyntaxTree::SyntaxError,
+            List(v) => List(v[1..].to_vec()),
+            _ => SyntaxError,
         }
     }
 
     fn list(&self) -> Self {
         match self {
-            SyntaxTree::List(v) => SyntaxTree::List(v[1..].to_vec()),
-            _ => SyntaxTree::SyntaxError,
+            List(v) => List(v[1..].to_vec()),
+            _ => SyntaxError,
         }
     }
 
     fn is_null(&self) -> Self {
         match self {
-            SyntaxTree::List(v) => SyntaxTree::Bool(v.len() == 0),
-            _ => SyntaxTree::Bool(false),
+            List(v) => Bool(v.len() == 0),
+            _ => Bool(false),
         }
     }
 
     fn is_number(&self) -> Self {
         match self {
-            SyntaxTree::Integer(_) | SyntaxTree::Float(_) => SyntaxTree::Bool(true),
-            _ => SyntaxTree::Bool(false),
+            Integer(_) | Float(_) => Bool(true),
+            _ => Bool(false),
         }
     }
 
     fn is_symbol(&self) -> Self {
         match self {
-            SyntaxTree::Symbol(_) => SyntaxTree::Bool(true),
-            _ => SyntaxTree::Bool(false),
+            Symbol(_) => Bool(true),
+            _ => Bool(false),
         }
     }
 
     fn is_list(&self) -> Self {
         match self {
-            SyntaxTree::List(_) => SyntaxTree::Bool(true),
-            _ => SyntaxTree::Bool(false),
+            List(_) => Bool(true),
+            _ => Bool(false),
         }
     }
 
     fn is_procedure(&self) -> Self {
         match self {
-            SyntaxTree::BuiltinOp(_)
-            | SyntaxTree::UnaryOp(_)
-            | SyntaxTree::BinaryOp(_)
-            | SyntaxTree::LambdaOp(_) => SyntaxTree::Bool(true),
-            _ => SyntaxTree::Bool(false),
+            BuiltinOp(_) | UnaryOp(_) | BinaryOp(_) | LambdaOp(_) => Bool(true),
+            _ => Bool(false),
         }
     }
 }
