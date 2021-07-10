@@ -60,6 +60,7 @@ impl Clone for SyntaxTree {
             Integer(v) => Integer(*v),
             Float(v) => Float(*v),
             Symbol(v) => Symbol(v.to_string()),
+            UnaryOp(v) => UnaryOp(v.clone()),
             BinaryOp(v) => BinaryOp(v.clone()),
             LambdaOp(v) => LambdaOp(v.clone()),
             BuiltinOp(v) => BuiltinOp(v.clone()),

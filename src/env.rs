@@ -6,9 +6,7 @@ use std::rc::Rc;
 #[derive(Clone)]
 pub struct Env {
     outer: Option<Box<Env>>,
-    binary_ops: HashMap<&'static str, Rc<dyn Fn(&SyntaxTree, &SyntaxTree) -> SyntaxTree>>,
-    unary_ops: HashMap<&'static str, Rc<dyn Fn(&SyntaxTree) -> SyntaxTree>>,
-    builtin_ops: HashMap<&'static str, Rc<dyn Fn(&SyntaxTree) -> SyntaxTree>>,
+    ops: HashMap<&'static str, SyntaxTree>,
     vars: HashMap<String, SyntaxTree>,
 }
 
@@ -16,9 +14,7 @@ impl Default for Env {
     fn default() -> Env {
         Env {
             outer: None,
-            binary_ops: HashMap::new(),
-            unary_ops: HashMap::new(),
-            builtin_ops: HashMap::new(),
+            ops: HashMap::new(),
             vars: HashMap::new(),
         }
     }
@@ -58,21 +54,21 @@ impl Env {
     where
         F: Fn(&SyntaxTree, &SyntaxTree) -> SyntaxTree,
     {
-        self.binary_ops.insert(name, Rc::new(func));
+        self.ops.insert(name, BinaryOp(Rc::new(func)));
     }
 
     fn make_unary_op<F: 'static>(&mut self, name: &'static str, func: F)
     where
         F: Fn(&SyntaxTree) -> SyntaxTree,
     {
-        self.unary_ops.insert(name, Rc::new(func));
+        self.ops.insert(name, UnaryOp(Rc::new(func)));
     }
 
     fn make_builtin_op<F: 'static>(&mut self, name: &'static str, func: F)
     where
         F: Fn(&SyntaxTree) -> SyntaxTree,
     {
-        self.builtin_ops.insert(name, Rc::new(func));
+        self.ops.insert(name, BuiltinOp(Rc::new(func)));
     }
 
     pub fn make_env(outer: Box<Env>) -> Self {
@@ -89,12 +85,8 @@ impl Env {
     pub fn find(&self, x: &str) -> Result<SyntaxTree, ()> {
         if self.vars.contains_key(x) {
             Ok(self.vars.get(x).unwrap().clone())
-        } else if self.binary_ops.contains_key(x) {
-            Ok(BinaryOp(self.binary_ops.get(x).unwrap().clone()))
-        } else if self.unary_ops.contains_key(x) {
-            Ok(UnaryOp(self.unary_ops.get(x).unwrap().clone()))
-        } else if self.builtin_ops.contains_key(x) {
-            Ok(BuiltinOp(self.builtin_ops.get(x).unwrap().clone()))
+        } else if self.ops.contains_key(x) {
+            Ok(self.ops.get(x).unwrap().clone())
         } else {
             match self.outer {
                 Some(ref v) => v.find(x),
