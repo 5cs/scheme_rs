@@ -70,7 +70,7 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
                 }
 
                 // bind args
-                let mut local_env = Env::make_env(Box::new(env.clone()));
+                let mut local_env = Env::make_env(Some(env));
                 if let List(p) = *op.parms {
                     for i in 0..args.len() {
                         if let Symbol(k) = &p[i] {

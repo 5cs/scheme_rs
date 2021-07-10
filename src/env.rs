@@ -4,14 +4,14 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct Env {
-    outer: Option<Box<Env>>,
+pub struct Env<'a> {
+    outer: Option<&'a Env<'a>>,
     ops: HashMap<&'static str, SyntaxTree>,
     vars: HashMap<String, SyntaxTree>,
 }
 
-impl Default for Env {
-    fn default() -> Env {
+impl<'a> Default for Env<'a> {
+    fn default() -> Env<'a> {
         Env {
             outer: None,
             ops: HashMap::new(),
@@ -20,7 +20,7 @@ impl Default for Env {
     }
 }
 
-impl Env {
+impl<'a> Env<'a> {
     pub fn new() -> Self {
         let mut env = Env::default();
         env.make_binary_op("+", |x, y| x + y);
@@ -71,9 +71,9 @@ impl Env {
         self.ops.insert(name, BuiltinOp(Rc::new(func)));
     }
 
-    pub fn make_env(outer: Box<Env>) -> Self {
+    pub fn make_env(outer: Option<&'a Env<'a>>) -> Self {
         Env {
-            outer: Some(outer),
+            outer,
             ..Default::default()
         }
     }
