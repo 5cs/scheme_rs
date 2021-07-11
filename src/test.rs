@@ -145,6 +145,58 @@ fn test_define() {
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
         Integer(1)
     );
+
+    let program = "(define foo (lambda () (define a 5)))";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        Nil
+    );
+
+    let program = "(foo)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        Nil
+    );
+
+    let program = "a";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        Integer(1)
+    );
+}
+
+#[test]
+fn test_set() {
+    let mut global_env = Env::new();
+    let program = "(define a 1)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        Nil
+    );
+
+    let program = "a";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        Integer(1)
+    );
+
+    let program = "(define foo (lambda () (set! a 5)))";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        Nil
+    );
+
+    let program = "(foo)";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        Nil
+    );
+
+    let program = "a";
+    assert_eq!(
+        eval(&parse(program).unwrap(), &mut global_env).unwrap(),
+        Integer(5)
+    );
 }
 
 #[test]

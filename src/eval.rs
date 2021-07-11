@@ -1,13 +1,15 @@
 use super::env::Env;
 use super::tree::Procedure;
 use super::tree::SyntaxTree::{self, *};
+use std::cell::RefCell;
+use std::rc::Rc;
 
-pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
+pub fn eval(x: &SyntaxTree, env: &mut Rc<RefCell<Env>>) -> Result<SyntaxTree, ()> {
     match x {
         Bool(v) => Ok(Bool(*v)),
         Integer(v) => Ok(Integer(*v)),
         Float(v) => Ok(Float(*v)),
-        Symbol(v) => env.find(v),
+        Symbol(v) => env.borrow().find(v),
         List(v) => {
             if v.len() == 0 {
                 return Ok(x.clone());
@@ -26,10 +28,17 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
                 }
 
                 if s == "define" {
-                    let var = v[1].clone();
-                    if let Symbol(ref k) = var {
+                    if let Symbol(ref k) = v[1] {
                         let res = eval(&v[2], env)?;
-                        env.make_var(k, &res)
+                        env.borrow_mut().make_var(k, &res);
+                    }
+                    return Ok(Nil);
+                }
+
+                if s == "set!" {
+                    if let Symbol(ref k) = v[1] {
+                        let res = eval(&v[2], env)?;
+                        env.borrow_mut().set_var(k, &res);
                     }
                     return Ok(Nil);
                 }
@@ -70,11 +79,11 @@ pub fn eval(x: &SyntaxTree, env: &mut Env) -> Result<SyntaxTree, ()> {
                 }
 
                 // bind args
-                let mut local_env = Env::make_env(Some(env));
+                let mut local_env = Env::make_env(Some(env.clone()));
                 if let List(p) = *op.parms {
                     for i in 0..args.len() {
                         if let Symbol(k) = &p[i] {
-                            local_env.make_var(k, &args[i]);
+                            local_env.borrow_mut().make_var(k, &args[i]);
                         }
                     }
                 }

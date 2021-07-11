@@ -1,17 +1,18 @@
 use super::op::{BinaryOps, UnaryOps};
 use super::tree::SyntaxTree::{self, *};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct Env<'a> {
-    outer: Option<&'a Env<'a>>,
+pub struct Env {
+    outer: Option<Rc<RefCell<Env>>>,
     ops: HashMap<&'static str, SyntaxTree>,
     vars: HashMap<String, SyntaxTree>,
 }
 
-impl<'a> Default for Env<'a> {
-    fn default() -> Env<'a> {
+impl Default for Env {
+    fn default() -> Env {
         Env {
             outer: None,
             ops: HashMap::new(),
@@ -20,8 +21,8 @@ impl<'a> Default for Env<'a> {
     }
 }
 
-impl<'a> Env<'a> {
-    pub fn new() -> Self {
+impl Env {
+    pub fn new() -> Rc<RefCell<Self>> {
         let mut env = Env::default();
         env.make_binary_op("+", |x, y| x + y);
         env.make_binary_op("-", |x, y| x - y);
@@ -47,7 +48,7 @@ impl<'a> Env<'a> {
         env.make_unary_op("list?", |x| x.is_list());
         env.make_unary_op("procedure?", |x| x.is_procedure());
         env.make_builtin_op("list", |x| x.list());
-        env
+        Rc::new(RefCell::new(env))
     }
 
     fn make_binary_op<F: 'static>(&mut self, name: &'static str, func: F)
@@ -71,15 +72,30 @@ impl<'a> Env<'a> {
         self.ops.insert(name, BuiltinOp(Rc::new(func)));
     }
 
-    pub fn make_env(outer: Option<&'a Env<'a>>) -> Self {
-        Env {
+    pub fn make_env(outer: Option<Rc<RefCell<Env>>>) -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(Env {
             outer,
             ..Default::default()
-        }
+        }))
     }
 
     pub fn make_var(&mut self, name: &str, value: &SyntaxTree) {
-        self.vars.insert(name.to_owned(), value.clone());
+        if self.vars.contains_key(name) {
+            *self.vars.get_mut(name).unwrap() = value.clone();
+        } else {
+            self.vars.insert(name.to_owned(), value.clone());
+        }
+    }
+
+    pub fn set_var(&mut self, name: &str, value: &SyntaxTree) {
+        if self.vars.contains_key(name) {
+            *self.vars.get_mut(name).unwrap() = value.clone();
+        } else {
+            match self.outer {
+                Some(ref v) => v.borrow_mut().set_var(name, value),
+                None => self.make_var(name, value),
+            }
+        }
     }
 
     pub fn find(&self, x: &str) -> Result<SyntaxTree, ()> {
@@ -89,7 +105,7 @@ impl<'a> Env<'a> {
             Ok(self.ops.get(x).unwrap().clone())
         } else {
             match self.outer {
-                Some(ref v) => v.find(x),
+                Some(ref v) => v.borrow().find(x),
                 None => Ok(Symbol(x.to_owned())),
             }
         }
