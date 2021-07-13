@@ -17,14 +17,14 @@ pub fn eval(x: &SyntaxTree, env: &mut Rc<RefCell<Env>>) -> Result<SyntaxTree, ()
 
             if let Symbol(ref s) = v[0] {
                 if s == "if" {
-                    let (test, conseq, alt) = (v[1].clone(), v[2].clone(), v[3].clone());
+                    let (test, conseq, alt) = (&v[1], &v[2], &v[3]);
                     let pred = eval(&test, env)?;
-                    let exp = match pred {
-                        Bool(true) => conseq,
-                        Bool(false) => alt,
+                    let res = match pred {
+                        Bool(true) => eval(conseq, env)?,
+                        Bool(false) => eval(alt, env)?,
                         _ => SyntaxError,
                     };
-                    return eval(&exp, env);
+                    return Ok(res);
                 }
 
                 if s == "define" {
@@ -80,7 +80,7 @@ pub fn eval(x: &SyntaxTree, env: &mut Rc<RefCell<Env>>) -> Result<SyntaxTree, ()
 
                 // bind args
                 let mut local_env = Env::make_env(Some(env.clone()));
-                if let List(p) = *op.parms {
+                if let List(ref p) = *op.parms {
                     for i in 0..args.len() {
                         if let Symbol(k) = &p[i] {
                             local_env.borrow_mut().make_var(k, &args[i]);
