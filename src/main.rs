@@ -1,6 +1,6 @@
 mod env;
 mod eval;
-mod op;
+mod ops;
 mod parser;
 mod tree;
 

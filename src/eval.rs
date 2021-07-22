@@ -1,10 +1,10 @@
 use super::env::Env;
 use super::tree::Procedure;
-use super::tree::SyntaxTree::{self, *};
+use super::tree::SExpr::{self, *};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub fn eval(x: &SyntaxTree, env: &mut Rc<RefCell<Env>>) -> Result<SyntaxTree, ()> {
+pub fn eval(x: &SExpr, env: &mut Rc<RefCell<Env>>) -> Result<SExpr, ()> {
     match x {
         Bool(v) => Ok(Bool(*v)),
         Integer(v) => Ok(Integer(*v)),
@@ -30,6 +30,7 @@ pub fn eval(x: &SyntaxTree, env: &mut Rc<RefCell<Env>>) -> Result<SyntaxTree, ()
                 if s == "define" {
                     if let Symbol(ref k) = v[1] {
                         let res = eval(&v[2], env)?;
+                        println!("{:?}", res);
                         env.borrow_mut().make_var(k, &res);
                     }
                     return Ok(Nil);
@@ -72,7 +73,7 @@ pub fn eval(x: &SyntaxTree, env: &mut Rc<RefCell<Env>>) -> Result<SyntaxTree, ()
             let proc = eval(&v[0], env)?;
             if let LambdaOp(op) = proc {
                 // eval args
-                let mut args: Vec<SyntaxTree> = vec![];
+                let mut args: Vec<SExpr> = vec![];
                 for i in 1..v.len() {
                     let arg = eval(&v[i], env)?;
                     args.push(arg);

@@ -1,4 +1,4 @@
-use super::tree::SyntaxTree::{self, *};
+use super::tree::SExpr::{self, *};
 
 fn tokenize(program: &str) -> Vec<String> {
     let tmp = program
@@ -15,14 +15,14 @@ fn tokenize(program: &str) -> Vec<String> {
         .collect()
 }
 
-fn read_from_tokens(tokens: &mut Vec<String>) -> Result<SyntaxTree, ()> {
+fn read_from_tokens(tokens: &mut Vec<String>) -> Result<SExpr, ()> {
     if tokens.len() == 0 {
         return Err(());
     }
     let token: String = String::from(tokens.get(0).unwrap());
     tokens.drain(0..1);
     if token == "(" {
-        let mut l: Vec<SyntaxTree> = vec![];
+        let mut l: Vec<SExpr> = vec![];
         while tokens.get(0).unwrap() != ")" {
             if let Ok(s) = read_from_tokens(tokens) {
                 l.push(s);
@@ -46,6 +46,6 @@ fn read_from_tokens(tokens: &mut Vec<String>) -> Result<SyntaxTree, ()> {
     }
 }
 
-pub fn parse(program: &str) -> Result<SyntaxTree, ()> {
+pub fn parse(program: &str) -> Result<SExpr, ()> {
     read_from_tokens(&mut tokenize(program))
 }

@@ -1,13 +1,13 @@
-use super::tree::SyntaxTree::{self, *};
+use super::tree::SExpr::{self, *};
 use std::cmp::Ordering;
 use std::ops::{Add, Div, Mul, Sub};
 
-pub trait BinaryOps<Rhs = SyntaxTree> {
+pub trait BinaryOp<Rhs = SExpr> {
     fn append(&self, rhs: &Rhs) -> Self;
     fn cons(&self, rhs: &Rhs) -> Self;
 }
 
-pub trait UnaryOps {
+pub trait UnaryOp {
     fn abs(&self) -> Self;
     fn quote(&self) -> Self;
     fn car(&self) -> Self;
@@ -22,8 +22,8 @@ pub trait UnaryOps {
 
 macro_rules! arith_op {
     ($bound:ident, $func:ident, $op:tt) => {
-        impl $bound for &SyntaxTree {
-            type Output = SyntaxTree;
+        impl $bound for &SExpr {
+            type Output = SExpr;
             fn $func(self, other: Self) -> Self::Output {
                 match (self, other) {
                     (Integer(l), Integer(r)) => Integer(l $op r),
@@ -47,8 +47,8 @@ arith_op!(Mul, mul, *);
 arith_op!(Div, div, /);
 
 // eq, ne
-impl PartialEq for SyntaxTree {
-    fn eq(&self, other: &SyntaxTree) -> bool {
+impl PartialEq for SExpr {
+    fn eq(&self, other: &SExpr) -> bool {
         match (self, other) {
             (Nil, Nil) => true,
             (Bool(l), Bool(r)) => l == r,
@@ -62,8 +62,8 @@ impl PartialEq for SyntaxTree {
 }
 
 // lt, le, gt, ge
-impl PartialOrd for SyntaxTree {
-    fn partial_cmp(&self, other: &SyntaxTree) -> Option<Ordering> {
+impl PartialOrd for SExpr {
+    fn partial_cmp(&self, other: &SExpr) -> Option<Ordering> {
         match (self, other) {
             (Bool(l), Bool(r)) => l.partial_cmp(r),
             (Integer(l), Integer(r)) => l.partial_cmp(r),
@@ -76,8 +76,8 @@ impl PartialOrd for SyntaxTree {
     }
 }
 
-impl BinaryOps for SyntaxTree {
-    fn append(&self, other: &SyntaxTree) -> Self {
+impl BinaryOp for SExpr {
+    fn append(&self, other: &SExpr) -> Self {
         match (self, other) {
             (List(l), List(ref r)) => l.iter().cloned().chain(r.iter().cloned()).collect(),
             (Integer(_), r) | (Float(_), r) => self + &r,
@@ -85,7 +85,7 @@ impl BinaryOps for SyntaxTree {
         }
     }
 
-    fn cons(&self, other: &SyntaxTree) -> Self {
+    fn cons(&self, other: &SExpr) -> Self {
         match (self, other) {
             (List(l), List(ref r)) => l.iter().cloned().chain(r.iter().cloned()).collect(),
             (Integer(_), List(r)) | (Float(_), List(r)) => [self.clone()]
@@ -99,7 +99,7 @@ impl BinaryOps for SyntaxTree {
     }
 }
 
-impl UnaryOps for SyntaxTree {
+impl UnaryOp for SExpr {
     fn abs(&self) -> Self {
         match self {
             Integer(v) => Integer(v.abs()),
@@ -112,21 +112,27 @@ impl UnaryOps for SyntaxTree {
         match self {
             Integer(v) => List(vec![Integer(*v)]),
             Float(v) => List(vec![Float(*v)]),
-            List(v) => List(v.clone()),
+            List(v) => List(v.clone()), // TODO: recursive quote
             _ => SyntaxError,
         }
     }
 
     fn car(&self) -> Self {
         match self {
-            List(v) => v[0].clone(),
+            List(v) => {
+                println!("{:?}", v[0]);
+                return v[0].clone();
+            }
             _ => SyntaxError,
         }
     }
 
     fn cdr(&self) -> Self {
         match self {
-            List(v) => List(v[1..].to_vec()),
+            List(v) => {
+                println!("{:?}", v[1..].to_vec());
+                return List(v[1..].to_vec());
+            }
             _ => SyntaxError,
         }
     }

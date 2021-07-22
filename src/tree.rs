@@ -2,29 +2,29 @@ use std::fmt;
 use std::iter::FromIterator;
 use std::rc::Rc;
 
-pub enum SyntaxTree {
+pub enum SExpr {
     Nil,
     Bool(bool),
     Integer(i32),
     Float(f32),
     Symbol(String),
-    List(Vec<SyntaxTree>),
-    BinaryOp(Rc<dyn Fn(&SyntaxTree, &SyntaxTree) -> SyntaxTree>),
-    UnaryOp(Rc<dyn Fn(&SyntaxTree) -> SyntaxTree>),
-    BuiltinOp(Rc<dyn Fn(&SyntaxTree) -> SyntaxTree>),
+    List(Vec<SExpr>),
+    BinaryOp(Rc<dyn Fn(&SExpr, &SExpr) -> SExpr>),
+    UnaryOp(Rc<dyn Fn(&SExpr) -> SExpr>),
+    BuiltinOp(Rc<dyn Fn(&SExpr) -> SExpr>),
     LambdaOp(Procedure),
     SyntaxError,
 }
 
 #[derive(Clone)]
 pub struct Procedure {
-    pub parms: Box<SyntaxTree>,
-    pub body: Box<SyntaxTree>,
+    pub parms: Box<SExpr>,
+    pub body: Box<SExpr>,
 }
 
-use SyntaxTree::*;
+use SExpr::*;
 
-impl fmt::Debug for SyntaxTree {
+impl fmt::Debug for SExpr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Nil => f.write_str(&format!("nil")),
@@ -53,7 +53,7 @@ impl fmt::Debug for SyntaxTree {
     }
 }
 
-impl Clone for SyntaxTree {
+impl Clone for SExpr {
     fn clone(&self) -> Self {
         match self {
             Bool(v) => Bool(*v),
@@ -70,9 +70,9 @@ impl Clone for SyntaxTree {
     }
 }
 
-impl FromIterator<SyntaxTree> for SyntaxTree {
-    fn from_iter<T: IntoIterator<Item = SyntaxTree>>(iter: T) -> Self {
-        let mut v: Vec<SyntaxTree> = vec![];
+impl FromIterator<SExpr> for SExpr {
+    fn from_iter<T: IntoIterator<Item = SExpr>>(iter: T) -> Self {
+        let mut v: Vec<SExpr> = vec![];
         for i in iter {
             v.push(i);
         }
