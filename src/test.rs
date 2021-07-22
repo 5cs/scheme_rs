@@ -1,4 +1,4 @@
-use super::tree::SyntaxTree::*;
+use super::tree::SExpr::*;
 use super::*;
 
 #[test]
@@ -214,7 +214,7 @@ fn test_lambda_op() {
     let program = "myabs";
     match parse(program) {
         Err(_) => assert!(false, "parse error"),
-        Ok(tree) => match eval(&tree, &mut global_env) {
+        Ok(sexpr) => match eval(&sexpr, &mut global_env) {
             Err(_) => assert!(false, "eval error"),
             Ok(val) => match val {
                 LambdaOp(_) => assert!(true),
@@ -266,7 +266,7 @@ fn test_sqrt_newton() {
     let program = "(define sqrt (lambda (x) (sqrt-iter 1.0 x)))";
     eval(&parse(program).unwrap(), &mut global_env).unwrap();
 
-    use super::op::UnaryOps;
+    use super::ops::UnaryOp;
     for i in 1..1000 {
         let r = eval(&parse(&format!("(sqrt {:?})", i)).unwrap(), &mut global_env).unwrap();
         assert!(
@@ -315,5 +315,40 @@ fn test_fibonacci_cps() {
     assert_eq!(
         eval(&parse(program).unwrap(), &mut global_env).unwrap(),
         Integer(55)
+    );
+}
+
+#[test]
+fn test_list() {
+    let mut global_env = Env::new();
+    let program = "(define l (quote ((3 3) 1 2 4 (1 (1 2 1)))))";
+    eval(&parse(program).unwrap(), &mut global_env).unwrap();
+
+    // length
+    let program = "(define length
+                    (lambda (l)
+                     (if (null? l)
+                      0
+                      (+ 1 (length (cdr l))))))";
+    eval(&parse(program).unwrap(), &mut global_env).unwrap();
+
+    assert_eq!(
+        eval(&parse("(length l)").unwrap(), &mut global_env).unwrap(),
+        Integer(5)
+    );
+
+    // sum
+    let program = "(define sum
+                    (lambda (l)
+                     (if (null? l)
+                      0
+                      (if (number? (car l))
+                       (+ (car l) (sum (cdr l)))
+                       (+ (sum (car l)) (sum (cdr l))) ))))";
+    eval(&parse(program).unwrap(), &mut global_env).unwrap();
+
+    assert_eq!(
+        eval(&parse("(sum l)").unwrap(), &mut global_env).unwrap(),
+        Integer(18)
     );
 }
