@@ -9,7 +9,6 @@ fn tokenize(program: &str) -> Vec<String> {
     let stream = tmp.trim().split(" ");
 
     stream
-        .into_iter()
         .filter(|token| token != &"")
         .map(|token| token.to_string())
         .collect()
